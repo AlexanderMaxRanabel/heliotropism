@@ -27,8 +27,8 @@ pub extern "C" fn _start() -> ! {
 
     use core::fmt::Write;
 
-    //vga_buffer::WRITER.lock().write_str("Welcome to Heliotropism Operating System").unwrap();
-    write!(vga_buffer::WRITER.lock(), ", some numbers: {} {}", 42, 1.337).unwrap();
+    vga_buffer::WRITER.lock().write_str("Welcome to Heliotropism Operating System").unwrap();
+    write!(vga_buffer::WRITER.lock(), "Kernel lives on!").unwrap();
     write!(vga_buffer::WRITER.lock(), "Heliotropium").unwrap();
     loop {}
 }
