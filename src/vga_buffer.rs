@@ -2,6 +2,8 @@ use core::fmt;
 use core::fmt::Write;
 use core::ptr::write;
 use volatile::Volatile;
+use spin::Mutex;
+use lazy_static::lazy_static;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -58,7 +60,7 @@ pub struct Writer {
 impl Writer {
     //noinspection RsBorrowChecker
     //noinspection BorrowChecker
-    pub fn write_byte_calcadite(&mut self, byte: u8) {
+    pub fn write_byte_heliotropism(&mut self, byte: u8) {
         match byte {
             b'\n' => self.new_line(),
             byte => {
@@ -83,34 +85,54 @@ impl Writer {
         for byte in s.bytes() {
             match byte {
                 // printable ASCII byte or newline
-                0x20..=0x7e | b'\n' => self.write_byte_calcadite(byte),
+                0x20..=0x7e | b'\n' => self.write_byte_heliotropism(byte),
                 // not part of printable ASCII range
-                _ => self.write_byte_calcadite(0xfe),
+                _ => self.write_byte_heliotropism(0xfe),
             }
 
         }
     }
-    fn new_line(&mut self) { for row in 1..BUFFER_HEIGHT {
+
+    fn new_line(&mut self) { 
+        for row in 1..BUFFER_HEIGHT {
+            for col in 0..BUFFER_WIDTH {
+                let character = self.buffer.chars[row.clone()][col].read();
+                self.buffer.chars[row.clone() - 1][col.clone()].write(character);
+            }
+        }
+        self.clear_row(BUFFER_HEIGHT - 1);
+        self.column_position = 0;
+    }
+
+    fn clear_row(&mut self, row: usize) {
+        let blank = ScreenChar {
+            ascii_character: b' ',
+            color_code: self.color_code,
+        };
         for col in 0..BUFFER_WIDTH {
-            let character = self.buffer.chars[row.clone()][col].read();
-            self.buffer.chars[row.clone() - 1][col.clone()].write(character);
+            self.buffer.chars[row][col].write(blank);
         }
     }
-        self.clear_row(BUFFER_HEIGHT - 1);
-        self.column_position = 0;}
-
-    fn clear_row(&mut self, row: usize) {/* TODO */}
 }
 
 
 impl fmt::Write for Writer {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.write_string(s);
+        self.new_line();
         Ok(())
     }
 }
 
-pub fn print() {
+lazy_static! {
+    pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
+        column_position: 0,
+        color_code: ColorCode::new(Color::Yellow, Color::Black),
+        buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
+    });
+}
+
+/*pub fn print() {
     let mut print_state1 = Writer {
         column_position: 0,
         color_code: ColorCode::new(Color::Yellow, Color::Black),
@@ -118,10 +140,11 @@ pub fn print() {
     };
 
     let mut print_state2 = Writer {
-        column_position: 0,
-        color_code: ColorCode::new(Color::Cyan, Color::Black),
+        column_position: 1,
+        color_code: ColorCode::new(Color::Red, Color::Black),
         buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
     };
 
-    write!(print_state1, "Welcome to Calcadite Operating System").unwrap();
-}
+    write!(print_state1, "Welcome to Heliotropism Operating System").unwrap();
+    write!(print_state2, "Finished").unwrap();
+}*/

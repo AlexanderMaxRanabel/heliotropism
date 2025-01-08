@@ -25,7 +25,11 @@ pub extern "C" fn _start() -> ! {
         }
     }  <- The Old Way*/
 
-    vga_buffer::print();
+    use core::fmt::Write;
+
+    //vga_buffer::WRITER.lock().write_str("Welcome to Heliotropism Operating System").unwrap();
+    write!(vga_buffer::WRITER.lock(), ", some numbers: {} {}", 42, 1.337).unwrap();
+    write!(vga_buffer::WRITER.lock(), "Heliotropium").unwrap();
     loop {}
 }
 
